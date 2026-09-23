@@ -6,20 +6,12 @@ import pandas as pd
 import plotly.express as px
 import kagglehub
 
-# ============================================================
-# PAGINA-INSTELLINGEN
-# ============================================================
 st.set_page_config(
     page_title="Klimaatbeleid vs. realiteit",
     layout="wide"
 )
 
-# ============================================================
-# WEERGAVE-LABELS
-# Alle titels, assen, legenda's en tabelkoppen halen hun tekst
-# hieruit, zodat er nergens een technische kolomnaam (met
-# underscore) of een em-dash in beeld komt.
-# ============================================================
+
 LABELS = {
     "country": "Land",
     "iso_code": "Landcode",
@@ -37,14 +29,10 @@ LABELS = {
 }
 
 
-# ============================================================
-# DATA INLADEN VIA KAGGLEHUB, OPSCHONEN EN TRANSFORMEREN
-# ============================================================
 @st.cache_data
 def load_data():
-    # --- Datasets ophalen via de Kaggle API (kagglehub) ---
-    # Let op: hiervoor moet een Kaggle API-sleutel aanwezig zijn
-    # (~/.kaggle/kaggle.json, of de env vars KAGGLE_USERNAME/KAGGLE_KEY).
+    #  Datasets ophalen via de Kaggle API (kagglehub) 
+    
     co2_path = kagglehub.dataset_download("vishnupriyan123/annual-co2-emissions-per-country")
     ren_path = kagglehub.dataset_download("elvisbui/renewable-energy-share-by-country-2000-2025")
 
@@ -54,9 +42,8 @@ def load_data():
     df_co2 = pd.read_csv(co2_csv)
     df_ren = pd.read_csv(ren_csv)
 
-    # --- Kolomnamen meteen na het inladen aanpassen ---
-    # (liever hier eenmalig rechtzetten dan later telkens in losse
-    # grafieken aan de praat houden)
+    #  Kolomnamen meteen na het inladen aanpassen 
+
     df_co2.rename(columns={
         "Entity": "country",
         "Code": "iso_code",
@@ -67,17 +54,14 @@ def load_data():
     raw_co2_count = len(df_co2)
     raw_ren_count = len(df_ren)
 
-    # --- Filteren op geldige ISO3-landcodes ---
+    # Filteren op geldige ISO3-landcodes 
     # Sluit continenten, regio's en inkomensgroepen uit (die hebben
     # geen 3-letterige landcode).
     df_co2_clean = df_co2[df_co2["iso_code"].notna() & (df_co2["iso_code"].str.len() == 3)].copy()
     df_ren_clean = df_ren[df_ren["iso_code"].notna() & (df_ren["iso_code"].str.len() == 3)].copy()
 
-    # --- Antarctica expliciet verwijderen ---
-    # ATA is een geldige 3-letterige code en overleeft dus de filter
-    # hierboven, maar Antarctica heeft geen inwoners/economie. Per
-    # inwoner berekende cijfers (CO2 per capita, GDP per capita) zijn
-    # daardoor niet zinvol, dus die rijen laten we vallen.
+    #  Antarctica expliciet verwijderen 
+    
     df_co2_clean = df_co2_clean[df_co2_clean["iso_code"] != "ATA"]
     df_ren_clean = df_ren_clean[df_ren_clean["iso_code"] != "ATA"]
 
@@ -86,10 +70,10 @@ def load_data():
     # De co2-dataset blijft leidend voor de landnaam.
     df_ren_clean = df_ren_clean.drop(columns=["country"])
 
-    # --- Inner join op landcode + jaar ---
+    # Inner join op landcode + jaar
     merged = pd.merge(df_co2_clean, df_ren_clean, on=["iso_code", "year"], how="inner")
 
-    # --- Afgeleide kolommen ---
+    #  Afgeleide kolommen
     merged["gdp_per_capita"] = merged.apply(
         lambda r: r["gdp"] / r["population"] if pd.notna(r["population"]) and r["population"] > 0 else None, axis=1
     )
@@ -97,7 +81,7 @@ def load_data():
         lambda r: r["co2_emissions"] / r["population"] if pd.notna(r["population"]) and r["population"] > 0 else None, axis=1
     )
 
-    # --- Inkomenscategorieën ---
+    # Inkomenscategorieën
     bins = [-float("inf"), 5000, 20000, float("inf")]
     labels_inkomen = ["Lage inkomens (< $5k)", "Opkomende inkomens ($5k-$20k)", "Hoge inkomens (> $20k)"]
     merged["income_group"] = pd.cut(merged["gdp_per_capita"], bins=bins, labels=labels_inkomen)
@@ -130,9 +114,7 @@ except Exception as e:
 min_jaar = int(df["year"].min())
 max_jaar = int(df["year"].max())
 
-# ============================================================
-# HOOFDTITEL
-# ============================================================
+
 st.title("Klimaatbeleid vs. realiteit")
 st.markdown(
     "**Onderzoeksvraag:** *in hoeverre komt de transitie naar hernieuwbare energie "
@@ -145,9 +127,6 @@ st.caption(
     "verantwoording van de gebruikte data."
 )
 
-# ============================================================
-# ZIJBALK / FILTERS
-# ============================================================
 st.sidebar.header("Filters")
 selected_year = st.sidebar.slider("Selecteer een jaar", min_value=min_jaar, max_value=max_jaar, value=max_jaar)
 
@@ -173,9 +152,6 @@ if selected_countries:
 if selected_income != "Alle inkomensgroepen":
     df_year = df_year[df_year["income_group"] == selected_income]
 
-# ============================================================
-# KERNCIJFERS (KPI's)
-# ============================================================
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Aantal geanalyseerde landen", len(df_year))
 col2.metric(
@@ -193,9 +169,7 @@ col4.metric(
 
 st.divider()
 
-# ============================================================
-# TABS
-# ============================================================
+
 tab1, tab2, tab3, tab4 = st.tabs([
     "Walk vs. talk",
     "CO2 vs. welvaart",
@@ -203,9 +177,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Data en methode",
 ])
 
-# -----------------------------------------------------------
-# TAB 1 — Walk vs. talk
-# -----------------------------------------------------------
+
 with tab1:
     st.subheader(f"Praat een land de talk, of loopt het ook de walk? ({min_jaar} versus {max_jaar})")
     st.caption(
@@ -266,9 +238,7 @@ with tab1:
         "doordat de totale energievraag harder groeide dan de omschakeling."
     )
 
-# -----------------------------------------------------------
-# TAB 2 — CO2 vs. welvaart
-# -----------------------------------------------------------
+
 with tab2:
     st.subheader(f"Stijgt CO2-uitstoot mee met welvaart? ({selected_year})")
     st.caption(
@@ -303,9 +273,6 @@ with tab2:
         "of te verlagen, ook wel groene ontkoppeling genoemd."
     )
 
-# -----------------------------------------------------------
-# TAB 3 — Kaart en tijdlijn
-# -----------------------------------------------------------
 with tab3:
     st.subheader(f"Aandeel hernieuwbare energie per land ({selected_year})")
     st.caption("Aanvullend bij de vorige twee grafieken: geografische spreiding en verloop per land.")
@@ -345,9 +312,7 @@ with tab3:
         fig_line.add_vline(x=2015, line_dash="dot", line_color="blue", annotation_text="Klimaatakkoord van Parijs (2015)")
         st.plotly_chart(fig_line, use_container_width=True)
 
-# -----------------------------------------------------------
-# TAB 4 — Data en methode
-# -----------------------------------------------------------
+
 with tab4:
     st.subheader("Hoe de data is opgebouwd")
     st.write(

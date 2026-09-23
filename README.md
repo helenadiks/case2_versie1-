@@ -4,10 +4,14 @@ Een interactief **Streamlit-dashboard** dat onderzoekt in hoeverre de groei van 
 
 ## 📊 Wat kun je bekijken?
 
-* **Walk vs. talk** — vergelijking tussen groei van hernieuwbare energie en verandering in CO₂-uitstoot.
-* **CO₂ vs. welvaart** — relatie tussen GDP per inwoner en CO₂-uitstoot.
-* **Kaart & tijdlijn** — geografische verdeling en ontwikkeling per land.
-* **Data & methode** — gebruikte datasets, opschoning en berekeningen.
+* **Walk vs. talk**
+* vergelijking tussen groei van hernieuwbare energie en verandering in CO₂-uitstoot.
+* **CO₂ vs. welvaart**
+* relatie tussen GDP per inwoner en CO₂-uitstoot.
+* **Kaart & tijdlijn**
+* geografische verdeling en ontwikkeling per land.
+* **Data & methode**
+* gebruikte datasets, opschoning en berekeningen.
 
 Het dashboard bevat filters voor **jaar, land en inkomensgroep**.
 

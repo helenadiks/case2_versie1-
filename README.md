@@ -21,14 +21,8 @@ Het dashboard bevat filters voor **jaar, land en inkomensgroep**.
 
 De data wordt automatisch opgehaald via de Kaggle API.
 
-## 🚀 Installatie
-
-```bash
-pip install streamlit pandas plotly kagglehub
-streamlit run app.py
-```
-
-Een geldige **Kaggle API-key** is nodig om de datasets automatisch te downloaden.
+## 🚀 Streamlit link
+https://case2team4.streamlit.app/
 
 ## 📚 Databronnen
 

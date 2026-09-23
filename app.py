@@ -292,7 +292,7 @@ with tab3:
 
     st.divider()
 
-    st.subheader("VOntwikkeling van CO2-uitstoot en hernieuwbare energie door de tijd")
+    st.subheader("Ontwikkeling van CO2-uitstoot en hernieuwbare energie door de tijd")
     gekozen_land = st.selectbox(
         "Selecteer een land voor de tijdlijn",
         landen_lijst,

@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import kagglehub
+import os
 
 # Pagina-instellingen
 st.set_page_config(
@@ -11,8 +13,15 @@ st.set_page_config(
 # Data inladen, opschonen en transformeren
 @st.cache_data
 def load_data():
-    df_co2 = pd.read_csv('data/annual-co2-emissions-per-country.csv')
-    df_ren = pd.read_csv('data/renewable_energy_share_2000_2025.csv')
+    # 1. CO2-dataset downloaden via kagglehub
+    path_co2 = kagglehub.dataset_download("vishnupriyan123/annual-co2-emissions-per-country")
+    csv_co2 = [os.path.join(path_co2, f) for f in os.listdir(path_co2) if f.endswith('.csv')][0]
+    df_co2 = pd.read_csv(csv_co2)
+
+    # 2. Hernieuwbare energie dataset downloaden via kagglehub
+    path_ren = kagglehub.dataset_download("elvisbui/renewable-energy-share-by-country-2000-2025")
+    csv_ren = [os.path.join(path_ren, f) for f in os.listdir(path_ren) if f.endswith('.csv')][0]
+    df_ren = pd.read_csv(csv_ren)
     
     # Kolommen hernoemen voor eenduidigheid
     df_co2.rename(columns={

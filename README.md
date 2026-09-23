@@ -5,13 +5,13 @@ Een interactief **Streamlit-dashboard** dat onderzoekt in hoeverre de groei van 
 ## 📊 Wat kun je bekijken?
 
 * **Walk vs. talk**
-* vergelijking tussen groei van hernieuwbare energie en verandering in CO₂-uitstoot.
+  vergelijking tussen groei van hernieuwbare energie en verandering in CO₂-uitstoot.
 * **CO₂ vs. welvaart**
-* relatie tussen GDP per inwoner en CO₂-uitstoot.
+  relatie tussen GDP per inwoner en CO₂-uitstoot.
 * **Kaart & tijdlijn**
-* geografische verdeling en ontwikkeling per land.
+  geografische verdeling en ontwikkeling per land.
 * **Data & methode**
-* gebruikte datasets, opschoning en berekeningen.
+  gebruikte datasets, opschoning en berekeningen.
 
 Het dashboard bevat filters voor **jaar, land en inkomensgroep**.
 
@@ -30,7 +30,7 @@ https://case2team4.streamlit.app/
 
 ## 📚 Databronnen
 
-* CO₂-uitstoot per land — Kaggle / Our World in Data
-* Hernieuwbare energie — Kaggle / Our World in Data, Ember en Energy Institute
+* CO₂-uitstoot per land Kaggle / Our World in Data
+* Hernieuwbare energie Kaggle / Our World in Data, Ember en Energy Institute
 
 De datasets worden gekoppeld op **ISO3-landcode en jaar**.

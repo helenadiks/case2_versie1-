@@ -1,3 +1,4 @@
+
 import glob
 import os
 
@@ -343,6 +344,9 @@ with tab2:
             labels=LABELS,
             title=f"GDP versus CO2-uitstoot: correlatie {correlatie:.2f} ({selected_year})",
         )
+        for spoor in fig_ekc.data:
+            if spoor.name == "Overall Trendline":
+                spoor.name = "Trendlijn (alle landen)"
         st.plotly_chart(fig_ekc, use_container_width=True)
 
     st.markdown(
@@ -457,6 +461,7 @@ with tab3:
             color_discrete_map={True: "#e34948", False: "#1baf7a"},
         )
         fig_diff.update_layout(showlegend=False)
+        fig_diff.update_traces(hovertemplate="Jaar: %{x}<br>Verandering: %{y:.2f} ton<extra></extra>")
         fig_diff.add_hline(y=0, line_color="gray")
 
         # We annoteren de grootste stijging en de grootste daling.

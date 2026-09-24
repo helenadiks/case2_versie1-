@@ -1,26 +1,30 @@
-# Documentatie & Toelichting Streamlit Dashboard: Klimaatbeleid vs. Realiteit
+[DOCUMENTATIE-7.md](https://github.com/user-attachments/files/32601457/DOCUMENTATIE-7.md)
+
+# Documentatie & Toelichting Streamlit Dashboard: Transitie en Uitstoot
 
 ## 1. Introductie & Koppeling met de Opdracht
 
-Dit dashboard is gebouwd in Python met **Streamlit**, **Pandas**, **Plotly Express** en **Kagglehub**. Het doel is om data over CO₂-uitstoot te combineren met data over hernieuwbare energie om te onderzoeken of de klimaattransitie daadwerkelijk leidt tot lagere emissies, en welke rol economische welvaart hierin speelt.
+Dit dashboard is gebouwd in Python met **Streamlit**, **Pandas**, **Plotly** en **Kagglehub**. Het doel is om data over CO₂-uitstoot te combineren met data over hernieuwbare energie om te onderzoeken of de klimaattransitie daadwerkelijk leidt tot lagere emissies, en welke rol economische welvaart hierin speelt.
 
 ### Aansluiting op de onderzoeksvragen
 
 * **Hoofdvraag:** *"In hoeverre komt de transitie naar hernieuwbare energie daadwerkelijk tot uiting in dalende CO₂-uitstoot, en hoe verhoudt dit zich tot het inkomensniveau van landen?"* De gebruiker kan via de zijbalk jaartallen, landen en inkomensniveaus filteren, terwijl KPI-kaarten en visualisaties direct inzicht geven in deze dynamiek.
-* **Deelvraag 1 ("Walk vs. Talk"):** *"Welke landen laten een reële ontkoppeling zien en welke blijven steken?"* Het tabblad **"Walk vs. talk"** berekent de verandering over de gehele periode en deelt landen in vier categorieën in op een scatterplot met scheidingslijnen.
-* **Deelvraag 2 & 3 (Environmental Kuznets Curve & inkomensgroepen):** *"Is er bewijs voor een Environmental Kuznets Curve en hoe verschilt dit per inkomensgroep?"* Het tabblad **"CO2 vs. welvaart"** plot het GDP per inwoner tegen de CO₂-uitstoot per inwoner, waarbij landen gekleurd zijn op basis van hun inkomensgroep.
-* Het tabblad **"Kaart en tijdlijn"** is geen aparte deelvraag, maar levert aanvullend bewijs: geografische spreiding en verloop per land.
+* **Deelvraag 1 ("Walk vs. Talk"):** *"Welke landen laten een reële ontkoppeling zien en welke blijven steken?"* Het tabblad **"Walk vs. talk"** berekent de verandering over de gehele periode en deelt landen in vier categorieën in op een scatterplot met scheidingslijnen en annotaties bij de duidelijkste voorbeelden.
+* **Deelvraag 2 & 3 (Environmental Kuznets Curve & inkomensgroepen):** *"Is er bewijs voor een Environmental Kuznets Curve en hoe verschilt dit per inkomensgroep?"* Het tabblad **"CO2 vs. welvaart"** plot het GDP per inwoner tegen de CO₂-uitstoot per inwoner, met een trendlijn en het correlatiegetal, waarbij landen gekleurd zijn op basis van hun inkomensgroep.
+* Het tabblad **"Kaart en tijdlijn"** is geen aparte deelvraag, maar levert aanvullend bewijs: geografische spreiding, een directe vergelijking tussen een gekozen hoofdland en andere landen, en de jaar-op-jaar verandering per land.
 * Het tabblad **"Data en methode"** licht de databronnen, opschoning en samenvoeging toe (transparantie/methodologie).
 
-**Let op:** in de app zelf staat nergens letterlijk "Deelvraag 1" of "Deelvraag 2 & 3". De tabbladen hebben een beschrijvende titel, met de onderzoeksvraag als kleinere toelichting eronder. Dat is bewust gedaan om het dashboard prettiger leesbaar en professioneler te maken voor een buitenstaander.
+**Let op:** in de app zelf staat nergens letterlijk "Deelvraag 1" of "Deelvraag 2 & 3". De tabbladen hebben een beschrijvende titel, met de onderzoeksvraag als kleinere toelichting eronder.
 
 ---
 
 ## 2. Installatie & Uitvoeren
 
+### Lokaal draaien
+
 1. **Vereiste packages installeren:**
    ```
-   pip install streamlit pandas plotly kagglehub
+   pip install -r requirements.txt
    ```
 2. **Kaggle API-sleutel instellen** (nodig omdat de datasets rechtstreeks via de Kaggle API worden opgehaald, niet handmatig gedownload):
    * Log in op [kaggle.com](https://www.kaggle.com), ga naar *Account*, *API*, *Create New Token*.
@@ -29,16 +33,30 @@ Dit dashboard is gebouwd in Python met **Streamlit**, **Pandas**, **Plotly Expre
    ```
    streamlit run app.py
    ```
-   Streamlit opent automatisch een browservenster op `http://localhost:8501` met het dashboard.
+
+### Publiceren op Streamlit Community Cloud
+
+Dit is het onderdeel waar een groep gemakkelijk op kan stuklopen: lokaal werkt de Kaggle-sleutel via het bestand `kaggle.json`, maar dat bestand staat niet in de GitHub-repository (en hoort daar ook niet in te staan, want het is een persoonlijke sleutel). Zonder extra stap zou de gepubliceerde app dus crashen bij het opstarten.
+
+1. Zet de repository op GitHub (zonder `kaggle.json` erin, dat is geheime informatie).
+2. Maak de app aan op [share.streamlit.io](https://share.streamlit.io/) door in te loggen met je GitHub-account.
+3. Ga in de app-instellingen naar **Settings > Secrets** en voeg toe:
+   ```toml
+   KAGGLE_USERNAME = "jouw_gebruikersnaam"
+   KAGGLE_KEY = "jouw_api_key"
+   ```
+4. De functie `zet_kaggle_credentials_klaar()` bovenaan `app.py` leest deze secrets uit en zet ze om naar de omgevingsvariabelen die `kagglehub` verwacht. Lokaal (zonder `secrets.toml`) doet deze functie niets, en valt de app terug op het gewone `kaggle.json`-bestand.
+
+**Controleer dit vóór het inleveren:** open de gepubliceerde link in een incognito-venster en kijk of het dashboard zonder foutmelding laadt. Dit is de eis *"een schone clone van de repo draait zonder handmatige stappen"*, met een aftrek van 1,0 op beide cijfers als dit niet werkt.
 
 ---
 
 ## 3. Belangrijkste Inzichten
 
-Deze bevindingen komen rechtstreeks uit de samengevoegde dataset (2000-2022, 205 landen):
+Deze bevindingen komen rechtstreeks uit de samengevoegde dataset (2000-2022, 205 landen) en staan ook zichtbaar in de app zelf (niet alleen hier):
 
-* **Walk vs. talk:** van de 198 landen met volledige data voor beide jaren, vallen er **49 in de categorie "Walk"** (aandeel hernieuwbare stroom nam toe én CO₂-uitstoot per inwoner daalde), tegenover **43 in "Talk"** (hernieuwbare stroom nam toe, maar CO₂-uitstoot per inwoner steeg per saldo toch) en **81 "Achterblijvers"** (weinig groene groei, stijgende CO₂-uitstoot). Landen als Cambodja, Afghanistan en China laten wel een stijging in hernieuwbare energie zien, maar hun CO₂-uitstoot per inwoner steeg in dezelfde periode fors, vermoedelijk doordat de totale energievraag harder groeide dan de omschakeling naar hernieuwbaar.
-* **Kuznets-curve:** in 2022 is de correlatie tussen GDP per inwoner en CO₂-uitstoot per inwoner **0,77** (sterk positief). Landen met een GDP per inwoner onder de mediaan stoten gemiddeld **1,24 ton** CO₂ per inwoner uit, tegenover **7,63 ton** bij landen boven de mediaan. Er is in deze data dus geen duidelijk bewijs dat CO₂-uitstoot per inwoner weer daalt bij de hoogste inkomens (het "omgekeerde-U"-patroon van de klassieke Kuznets-curve): welvarender landen stoten in 2022 nog altijd gemiddeld veel meer uit per inwoner.
+* **Walk vs. talk:** van de 198 landen met volledige data voor beide jaren, combineert slechts **25% (49 landen)** een stijging in hernieuwbare energie mét een daling van de CO₂-uitstoot per inwoner. **Aruba** laat de sterkste ontkoppeling zien; **Cambodja** is het duidelijkste voorbeeld van een land waar hernieuwbare energie fors toenam, maar de CO₂-uitstoot per inwoner toch met meer dan 600% steeg (waarschijnlijk doordat de totale energievraag veel harder groeide dan de omschakeling naar hernieuwbaar).
+* **Kuznets-curve:** in 2022 is de correlatie tussen GDP per inwoner en CO₂-uitstoot per inwoner **0,77** (sterk positief), zichtbaar via de trendlijn in het dashboard zelf. Landen met een GDP per inwoner onder de mediaan stoten gemiddeld **1,24 ton** CO₂ per inwoner uit, tegenover **7,63 ton** bij landen boven de mediaan. Er is in deze data dus geen bewijs dat CO₂-uitstoot per inwoner weer daalt bij de hoogste inkomens (het "omgekeerde-U"-patroon van de klassieke Kuznets-curve).
 
 ---
 
@@ -47,140 +65,116 @@ Deze bevindingen komen rechtstreeks uit de samengevoegde dataset (2000-2022, 205
 ### Stap 1: Imports & Pagina-instellingen
 
 ```python
-import glob
-import os
-
+import glob, os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import kagglehub
 
-st.set_page_config(page_title="Klimaatbeleid vs. realiteit", layout="wide")
+st.set_page_config(page_title="Transitie en uitstoot: houdt het gelijke tred?", layout="wide")
 ```
 
 * **Wat gebeurt hier?**
-De benodigde bibliotheken worden geladen, inclusief `kagglehub` voor het rechtstreeks ophalen van de datasets van Kaggle. `st.set_page_config` zet de titel van het browsertabblad en stelt de lay-out in op `wide`.
+Naast `plotly.express` (voor de meeste grafieken) wordt ook `plotly.graph_objects` geladen. Dat is nodig voor de vergelijkingsgrafiek in tabblad 3, waar elke lijn een eigen kleur, dikte en doorzichtigheid nodig heeft. Dat kan `plotly.express` niet per lijn apart instellen, `graph_objects` wel.
 
 ---
 
-### Stap 2: Vaste labels voor weergave
+### Stap 2: Kaggle-authenticatie (lokaal én op Streamlit Cloud)
 
 ```python
-LABELS = {
-    "co2_per_capita": "CO2 per inwoner (ton)",
-    "renewables_share_elec": "Aandeel hernieuwbare stroom (%)",
-    "gdp_per_capita": "GDP per inwoner (USD)",
-    ...
-}
+def zet_kaggle_credentials_klaar():
+    try:
+        if "KAGGLE_USERNAME" in st.secrets and "KAGGLE_KEY" in st.secrets:
+            os.environ["KAGGLE_USERNAME"] = st.secrets["KAGGLE_USERNAME"]
+            os.environ["KAGGLE_KEY"] = st.secrets["KAGGLE_KEY"]
+    except Exception:
+        pass
+
+zet_kaggle_credentials_klaar()
 ```
 
 * **Wat gebeurt hier?**
-Eén centrale dictionary vertaalt elke technische kolomnaam (die in de data onderling met underscores geschreven is, zoals `co2_per_capita`) naar een nette, leesbare tekst zonder underscores. Deze dictionary wordt bij elke grafiek als `labels=` meegegeven, zodat assen, legenda's en tabelkoppen overal consistent en professioneel ogen.
+`kagglehub` heeft ergens een Kaggle API-sleutel nodig om datasets te downloaden. Deze functie checkt of die sleutel als Streamlit-secret is ingesteld (voor de gepubliceerde versie) en zet die dan om naar omgevingsvariabelen. Lokaal, waar meestal al een `kaggle.json`-bestand op de standaardlocatie staat, doet deze functie niets schadelijks: de `try/except` vangt af dat er (nog) geen `secrets.toml` bestaat.
 
 ---
 
 ### Stap 3: Data ophalen, opschonen en samenvoegen
 
-```python
-@st.cache_data
-def load_data():
-    co2_path = kagglehub.dataset_download("vishnupriyan123/annual-co2-emissions-per-country")
-    ren_path = kagglehub.dataset_download("elvisbui/renewable-energy-share-by-country-2000-2025")
-    ...
-```
-
-* **Wat gebeurt hier?**
-1. **Ophalen via Kagglehub:** in plaats van handmatig gedownloade CSV-bestanden in een lokale map te lezen, worden de datasets rechtstreeks via de Kaggle API opgehaald. Dit vereist een geldige Kaggle API-sleutel op het systeem (`~/.kaggle/kaggle.json`).
-2. **Caching (`@st.cache_data`):** zorgt dat de download en verwerking maar één keer gebeurt, niet bij elke interactie met een filter.
-3. **Kolomhernoeming:** kolomnamen in de CO₂-dataset worden meteen na het inladen gestandaardiseerd (`Entity` wordt `country`, `Code` wordt `iso_code`, `Year` wordt `year`, `Annual CO₂ emissions` wordt `co2_emissions`), zodat ze matchen met de structuur van de energie-dataset. Dit gebeurt bewust direct na het inladen, in plaats van pas later in losse grafieken, zoals ook in het hoorcollege werd aangeraden.
-4. **Opschonen (ISO3-filtering):** met `df['iso_code'].str.len() == 3` worden alleen rijen met een geldige 3-letterige landcode behouden. Regio's, werelddelen en totalen (zoals *World* of *Europe*) worden hiermee uitgesloten.
-5. **Antarctica verwijderen:** Antarctica heeft toevallig wél een geldige 3-letterige code (`ATA`) en overleefde daardoor de ISO3-filter, maar heeft geen bevolkings- of GDP-cijfers. Per-inwoner-berekeningen zijn daardoor niet zinvol, dus deze rijen worden er apart uitgehaald.
-6. **Kolomnaam-botsing oplossen:** beide datasets bevatten een kolom `country` (die geen join-sleutel is). Zonder ingrijpen zou de merge automatisch `country_x` en `country_y` maken. De `country`-kolom uit de renewable-dataset wordt daarom vóór het samenvoegen verwijderd, zodat de landnaam uit de CO₂-dataset leidend blijft.
-7. **Inner join:** de datasets worden samengevoegd op de sleutel `[iso_code, year]`.
-8. **Feature engineering (nieuwe variabelen):**
-   * `gdp_per_capita` is GDP gedeeld door bevolking (veilig berekend, geeft `None` bij ontbrekende of nul-bevolking).
-   * `co2_per_capita` is CO₂-uitstoot gedeeld door bevolking.
-   * `income_group`: landen worden ingedeeld in drie klassen met `pd.cut()`: *Lage inkomens* (onder $5.000), *Opkomende inkomens* ($5.000 tot $20.000), *Hoge inkomens* (boven $20.000). Landen zonder GDP-data krijgen de aparte categorie *"Onbekend / geen GDP-data"*, in plaats van dat ze uit de dataset verdwijnen. Zo blijven ze zichtbaar op de kaart en in de tijdlijn, en vallen ze alleen weg uit de welvaart-analyse waar een GDP-waarde vereist is.
-9. **Statistieken bijhouden:** aantallen rijen vóór en na opschoning, en het aantal landen zonder GDP-data, worden opgeslagen in `stats` voor verantwoording in het tabblad "Data en methode".
+* **Kolomhernoeming** direct na het inladen (`Entity` wordt `country`, `Code` wordt `iso_code`, enzovoort), zoals ook in het hoorcollege werd aangeraden.
+* **ISO3-filtering:** alleen rijen met een geldige 3-letterige landcode blijven over, wat automatisch regio's en werelddelen uitsluit.
+* **Antarctica** wordt apart verwijderd (heeft wél een geldige code, maar geen bevolkings- of GDP-cijfers).
+* **Kolomnaam-botsing:** beide datasets hebben een kolom `country`; die van de renewable-dataset wordt vóór de merge verwijderd, zodat er geen `country_x`/`country_y` ontstaat.
+* **Inner join** op `[iso_code, year]`.
+* **Nieuwe variabelen:**
+  * `gdp_per_capita` en `co2_per_capita`: GDP/CO2 gedeeld door bevolking.
+  * `co2_verandering`: het verschil met het jaar ervoor, berekend met **`.diff()`**, per land apart via `groupby("iso_code")`. Zonder die groepering zou de eerste rij van het ene land worden afgetrokken van de laatste rij van het vorige land, wat een onzinnige uitschieter zou opleveren.
+  * `income_group`: landen ingedeeld in drie klassen met `pd.cut()`, met een aparte categorie voor landen zonder GDP-data (die blijven zo zichtbaar op de kaart en in de tijdlijn).
 
 ---
 
 ### Stap 4: Zijbalk & dynamische filters
 
-```python
-st.sidebar.header("Filters")
-selected_year = st.sidebar.slider("Selecteer een jaar", ...)
-selected_countries = st.sidebar.multiselect("Filter op specifieke landen", ...)
-selected_income = st.sidebar.selectbox("Filter op inkomensniveau", ...)
-use_log_scale = st.sidebar.checkbox("Logaritmische schaal voor GDP", ...)
-```
-
-* **Wat gebeurt hier?**
-De zijbalk bevat vier interactieve elementen: een **jaar-slider**, een **landenfilter** (multiselect), een **inkomensgroep-dropdown**, en een **checkbox** voor een logaritmische GDP-as (zodat grote verschillen tussen arme en rijke landen overzichtelijk blijven). Deze filters werken door op alle tabbladen die per jaar of per land filteren.
+Vier interactieve elementen: een **jaar-slider**, een **landenfilter** (multiselect), een **inkomensgroep-dropdown**, en een **checkbox** voor een logaritmische GDP-as. Dit dekt de eis van minimaal een slider, checkbox en dropdown, elk gekoppeld aan tabellen/visualisaties op meerdere tabbladen.
 
 ---
 
-### Stap 5: Kerncijfers (KPI's)
+### Stap 5: Tabblad "Walk vs. talk"
 
 ```python
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Aantal geanalyseerde landen", len(df_year))
-...
+n_walk = (df_change["Categorie"].str.startswith("Walk")).sum()
+pct_walk = round(100 * n_walk / n_totaal)
+st.subheader(f"Slechts {pct_walk}% van de landen maakt de belofte van hernieuwbare energie ook echt waar")
 ```
 
 * **Wat gebeurt hier?**
-Bovenaan het dashboard tonen vier kaarten samenvattende cijfers, die live meerekenen met de gekozen filters.
+De titel is geen beschrijving meer ("Walk vs. talk vergelijking"), maar een bewering die rechtstreeks uit de data wordt berekend. Daarnaast worden het duidelijkste "walk"-land en het duidelijkste "talk"-land met `fig.add_annotation()` in de grafiek zelf benoemd, in plaats van dat de kijker zelf tussen alle punten moet zoeken. De y-as wordt vervolgens met `fig.update_yaxes(range=[...])` ingezoomd op basis van diezelfde twee aangewezen landen (plus 15% marge), zodat een enkele extreme uitschieter (zie sectie 6) niet de hele as openrekt en de overige landen onleesbaar maakt.
 
 ---
 
-### Stap 6: Tabblad "Walk vs. talk"
+### Stap 6: Tabblad "CO2 vs. welvaart"
 
 ```python
-def categoriseer(row):
-    if row['ren_diff'] > 5 and row['co2_pct_change'] < 0:
-        return 'Walk: groene daling ...'
-    ...
+correlatie = df_ekc_clean["gdp_per_capita"].corr(df_ekc_clean["co2_per_capita"])
+fig_ekc = px.scatter(..., trendline="ols", trendline_scope="overall", ...)
 ```
 
 * **Wat gebeurt hier?**
-Vergelijkt het eerste jaar (2000) met het laatste jaar (2022) per land: hoeveel procentpunt is het aandeel hernieuwbare energie gestegen, en hoeveel procent is de CO₂-uitstoot per inwoner veranderd? Landen worden via de functie `categoriseer()` in vier kwadranten ingedeeld en getoond in een scatterplot met referentielijnen. De titel van dit tabblad benoemt geen letterlijk deelvraagnummer, maar stelt de vraag direct: *"Praat een land de talk, of loopt het ook de walk?"*
+De correlatiecoëfficiënt wordt met `.corr()` berekend en gebruikt om automatisch een bewerende titel te kiezen ("rijkere landen stoten meer uit" versus "minder uit" versus "geen duidelijk verband", afhankelijk van het teken en de sterkte). De trendlijn (`trendline="ols"`, een eenvoudige lineaire regressie) maakt het verband ook visueel zichtbaar. Dit vereist het package `statsmodels`, dat daarom in `requirements.txt` staat.
 
 ---
 
-### Stap 7: Tabblad "CO2 vs. welvaart"
+### Stap 7: Tabblad "Kaart en tijdlijn": vergelijkingsgrafiek
 
 ```python
-fig_ekc = px.scatter(df_ekc_clean, x="gdp_per_capita", y="co2_per_capita", size="population", color="income_group", ...)
+for land in vergelijkingslanden:
+    fig_vergelijk.add_trace(go.Scatter(..., line=dict(color=KLEUR_CONTEXT, width=1.5), opacity=0.55))
+fig_vergelijk.add_trace(go.Scatter(..., line=dict(color=KLEUR_HOOFDROL, width=3.5)))
 ```
 
 * **Wat gebeurt hier?**
-Een scatterplot toont het verband tussen welvaart (x-as) en CO₂-uitstoot (y-as) voor het gekozen jaar. Bolgrootte staat voor bevolkingsomvang, kleur voor inkomensgroep. Doel is zichtbaar maken of rijkere landen minder uitstoten per inwoner (de Environmental Kuznets Curve).
+Dit past de techniek uit het werkcollege toe: context (de vergelijkingslanden) wordt **eerst** getekend in grijs, dun en halftransparant; het hoofdland wordt **daarna** getekend in kleur, dik en vol. Omdat Plotly lijnen tekent in de volgorde waarin ze worden toegevoegd, komt de hoofdlijn zo automatisch bovenop te liggen. De gebruiker kiest zelf het hoofdland en tot vijf vergelijkingslanden via twee `st.selectbox`/`st.multiselect`-widgets, en kan wisselen tussen CO2-uitstoot en aandeel hernieuwbare energie via een `st.radio`.
 
 ---
 
-### Stap 8: Tabblad "Kaart en tijdlijn"
+### Stap 8: Tabblad "Kaart en tijdlijn": jaar-op-jaar verandering
 
 ```python
-fig_map = px.choropleth(df_year, locations="iso_code", color="renewables_share_elec", ...)
-fig_line = px.line(df_land, x="year", y=["renewables_share_elec", "co2_per_capita"], ...)
+fig_diff = px.bar(df_hoofd_diff, x="year", y="co2_verandering", ...)
+grootste_stijging = df_hoofd_diff.loc[df_hoofd_diff["co2_verandering"].idxmax()]
+grootste_daling = df_hoofd_diff.loc[df_hoofd_diff["co2_verandering"].idxmin()]
 ```
 
 * **Wat gebeurt hier?**
-1. **Wereldkaart:** kleurt landen op basis van hun aandeel hernieuwbare stroom in het gekozen jaar.
-2. **Tijdlijn per land** (subheader: "Ontwikkeling van CO2-uitstoot en hernieuwbare energie door de tijd"): een selectiebox laat de gebruiker één land kiezen (standaard Nederland); een lijngrafiek toont het verloop door de jaren heen, met een stippellijn bij 2015 (Klimaatakkoord van Parijs) als referentiepunt. De twee kolommen worden vóór het plotten hernoemd naar hun nette naam: Plotly gebruikt bij een grafiek met meerdere y-kolommen namelijk de kolomnamen zelf als legenda-items, en die worden niet automatisch vertaald door de `labels`-parameter (die hernoemt alleen de as- en legendatitel, niet de items erin).
+In plaats van alleen het niveau van CO2-uitstoot te tonen, laat deze staafgrafiek de jaar-op-jaar **verandering** zien (de `co2_verandering`-kolom uit Stap 3, berekend met `.diff()`). Staven zijn rood bij een stijging en groen bij een daling. De grootste stijging en de grootste daling worden automatisch opgezocht met `.idxmax()` / `.idxmin()` en geannoteerd in de grafiek.
+
+**Let op bij `.idxmax()`/`.idxmin()` op een kolom met NaN's:** deze functies slaan NaN-waarden stilzwijgend over. Dat is hier bewust gebruikt na een `.dropna(subset=["co2_verandering"])`, zodat het zoeken alleen over echte waarden gaat. Zou je dit toepassen op een kolom waar een deel van de NaN's er systematisch uitziet (bijvoorbeeld omdat twee reeksen niet helemaal overlappen), dan kan dit stil de verkeerde uitschieter opleveren, dus eerst `.isna().sum()` checken blijft de vuistregel.
 
 ---
 
 ### Stap 9: Tabblad "Data en methode"
 
-```python
-st.write(f"- Samengevoegde dataset: {stats['merged']:,} rijen, {stats['totaal_landen']} landen")
-st.info(f"{stats['landen_zonder_gdp']} van de {stats['totaal_landen']} landen missen GDP-data ...")
-st.dataframe(df_year[preview_cols].rename(columns=LABELS).head(15))
-```
-
-* **Wat gebeurt hier?**
-Dit tabblad biedt transparantie: hoeveel rijen er in de ruwe data zaten, hoeveel er overbleven na opschoning, hoeveel landen GDP-data missen en wat dat betekent voor de analyse, plus een voorbeeldweergave van de samengevoegde tabel met nette (niet-technische) kolomnamen.
+Ongewijzigd ten opzichte van de vorige versie: transparantie over aantallen rijen voor/na opschoning, hoeveel landen GDP-data missen, en een voorbeeldweergave van de samengevoegde tabel met nette kolomnamen.
 
 ---
 
@@ -189,10 +183,12 @@ Dit tabblad biedt transparantie: hoeveel rijen er in de ruwe data zaten, hoeveel
 | Component | Gebruikte Technologie | Functie in de App |
 | --- | --- | --- |
 | **Data ophalen** | `kagglehub` | Downloadt de datasets rechtstreeks via de Kaggle API. |
-| **Data structuur** | `pandas.DataFrame` | Opschonen, joins, berekeningen (`gdp_per_capita`, `income_group`). |
+| **Authenticatie** | `st.secrets` + omgevingsvariabelen | Laat de app zowel lokaal als op Streamlit Cloud werken. |
+| **Data structuur** | `pandas.DataFrame` | Opschonen, joins, `.diff()` voor jaar-op-jaar verandering, `.corr()` voor de correlatie. |
 | **Performance** | `@st.cache_data` | Voorkomt herhaaldelijk downloaden/inlezen van bestanden. |
-| **Interactiviteit** | `st.sidebar`, `st.slider`, `st.multiselect`, `st.selectbox` | Dynamisch filteren van de gegevens. |
-| **Visualisatie** | `plotly.express` (Scatter, Line, Choropleth) | Interactieve en zoombare grafieken en wereldkaarten. |
+| **Interactiviteit** | `st.sidebar`, `st.slider`, `st.multiselect`, `st.selectbox`, `st.radio` | Dynamisch filteren en het kiezen van hoofd-/vergelijkingslanden. |
+| **Visualisatie** | `plotly.express` (Scatter met trendline, Bar, Choropleth) en `plotly.graph_objects` (vergelijkingsgrafiek) | Interactieve grafieken, wereldkaart, en fijn gestuurde context-vs-hoofdrol-lijnen. |
+| **Annotaties** | `fig.add_annotation()`, `fig.add_hline()`/`add_vline()` | Wijst de kijker actief op de belangrijkste punten in plaats van dat die zelf gezocht moeten worden. |
 | **Leesbaarheid** | Centrale `LABELS`-dictionary | Zorgt dat titels, assen en tabelkoppen nergens technische kolomnamen tonen. |
 | **Structuur** | `st.tabs`, `st.columns`, `st.metric` | Overzichtelijke en nette presentatie van de resultaten. |
 
@@ -202,5 +198,59 @@ Dit tabblad biedt transparantie: hoeveel rijen er in de ruwe data zaten, hoeveel
 
 * **Antarctica** is bewust uitgesloten (geen bevolkings-/GDP-data, per-inwoner-cijfers zijn er niet zinvol).
 * **Kosovo** ontbreekt in de dataset: de dataset codeert Kosovo als `OWID_KOS`, wat door de ISO3-lengtefilter (precies 3 letters) wordt gezien als een niet-standaard code en dus wordt uitgesloten, samen met echte aggregaten zoals "World".
-* **41 van de 205 landen** missen GDP-data in minstens één jaar. Deze landen blijven zichtbaar op de kaart en in de tijdlijn, maar vallen weg uit de welvaart-analyse (tabblad "CO2 vs. welvaart").
+* **41 van de 205 landen** missen GDP-data in minstens één jaar. Deze landen blijven zichtbaar op de kaart en in de tijdlijn, maar vallen weg uit de welvaart-analyse.
 * Extreme waarden zoals 100% hernieuwbare stroom (bijvoorbeeld Albanië) zijn gecontroleerd en kloppen: dit zijn landen die hun elektriciteit vrijwel volledig uit waterkracht halen, geen fout in de data.
+* De trendlijn in tabblad "CO2 vs. welvaart" is een eenvoudige lineaire regressie (OLS) over alle zichtbare landen. Dit toont een verband, geen causaal bewijs: het dashboard beweert nergens dat welvaart CO2-uitstoot veroorzaakt, alleen dat ze samenhangen.
+* De y-as van de scatter in tabblad "Walk vs. talk" is bewust ingezoomd op basis van de twee aangewezen voorbeelden (plus marge), in plaats van op het absolute maximum van de data. Zonder deze ingreep trekt een enkel land (Laos: van 0,18 naar 3,07 ton CO2 per inwoner, een stijging van 1635%) de hele as open, waardoor de overige circa 200 landen niet meer van elkaar te onderscheiden zijn. Dit is geen foute data: de procentuele uitschieter ontstaat doordat de CO2-uitstoot per inwoner in het startjaar bijna nul was, niet doordat de werkelijke stijging extreem was. Het land valt hierdoor buiten beeld van de grafiek, wat expliciet in een tekstregel onder de grafiek wordt vermeld, met de suggestie om op dat land te filteren voor het exacte cijfer.
+
+---
+
+## 7. Gebruikte externe code en bronnen
+
+Het dashboard is zelf geschreven en aangepast op onze eigen samengevoegde dataset (eigen kolomnamen, eigen labels, eigen combinatie van grafieken). Een aantal standaardpatronen is overgenomen uit de officiële documentatie van de gebruikte libraries. Die patronen staan hieronder met bron, zodat na te gaan is wat ervandaan komt en wat zelf is opgezet.
+
+* **`st.cache_data`** om de data maar één keer op te halen en niet bij elke filterwijziging opnieuw te downloaden. Patroon uit de Streamlit-documentatie over caching: [https://docs.streamlit.io/develop/concepts/architecture/caching](https://docs.streamlit.io/develop/concepts/architecture/caching). Aangepast aan onze eigen `load_data()`-functie, die twee Kaggle-datasets ophaalt, opschoont en samenvoegt.
+* **`st.secrets`** om Kaggle-inloggegevens veilig in te stellen op Streamlit Community Cloud, zonder een `kaggle.json`-bestand in de repository te zetten. Patroon uit de Streamlit-documentatie over secrets management: [https://docs.streamlit.io/develop/concepts/connections/secrets-management](https://docs.streamlit.io/develop/concepts/connections/secrets-management). Zelf uitgebreid met een `try/except`, zodat de app ook lokaal blijft werken zonder een `secrets.toml`.
+* **`kagglehub.dataset_download()`** om de datasets programmatisch op te halen bij Kaggle in plaats van handmatig te downloaden. Patroon uit de kagglehub-documentatie: [https://github.com/Kaggle/kagglehub](https://github.com/Kaggle/kagglehub). Zelf aangepast: de teruggegeven map wordt doorzocht op het csv-bestand met `glob`, en de kolomnamen worden direct daarna hernoemd naar onze eigen namen.
+* **`trendline="ols"`** in de scatterplot van tabblad "CO2 vs. welvaart" om een trendlijn en R-waarde te berekenen. Patroon uit de Plotly Express-documentatie over trendlines: [https://plotly.com/python/linear-fits/](https://plotly.com/python/linear-fits/). Hiervoor is `statsmodels` nodig (zie `requirements.txt`). Zelf aangepast: de berekende correlatie wordt gebruikt om de titel van de grafiek automatisch te laten meebewegen.
+* **`go.Figure` met losse `add_trace`-aanroepen** voor de vergelijkingsgrafiek (hoofdland versus vergelijkingslanden) in tabblad "Kaart en tijdlijn", zodat elke lijn een eigen kleur, dikte en doorzichtigheid kan krijgen. Patroon uit de Plotly-documentatie over graph objects: [https://plotly.com/python/graph-objects/](https://plotly.com/python/graph-objects/). De volgorde waarin de lijnen worden getekend (grijze vergelijkingslanden eerst, het gekleurde hoofdland als laatste erbovenop) komt uit het hoorcollege Visual Analytics over het onderscheid tussen context en hoofdrol in een grafiek, niet uit externe documentatie.
+
+Geen van deze stukken is een compleet voorbeelddashboard dat is overgenomen; het gaat steeds om één functie of parameter uit de officiële documentatie, ingebouwd in onze eigen `load_data()`-functie en onze eigen grafieken. De groep kan bij elk van deze punten uitleggen wat de code doet en waarom die keuze is gemaakt (zie sectie 4, Stap-voor-Stap Code-Uitleg).
+
+---
+
+## 8. Presentatiescript (max. 10 minuten)
+
+Concreet script, klik voor klik, af te stemmen op wie van de groep welk stuk doet.
+
+**0. Opening (30 sec)**
+Noem de onderzoeksvraag en waarom dit onderwerp: klimaatbeleid wordt vaak besproken in beloftes (Parijsakkoord, duurzaamheidsdoelen), maar is dat ook terug te zien in de cijfers?
+
+**1. Tabblad "Walk vs. talk" (2,5 min)**
+* Open het tabblad, laat de titel zien: "Slechts 25% van de landen maakt de belofte ook echt waar."
+* Wijs de twee annotaties aan: Aruba (sterkste ontkoppeling) en Cambodja (meer hernieuwbaar, CO2 stijgt toch fors).
+* Noem dat elke categorie zowel een eigen kleur als een eigen vorm heeft, zodat de grafiek ook zonder kleur (bijvoorbeeld bij kleurenblindheid) nog te lezen is.
+* Als je erop wordt aangesproken: de as loopt niet door tot het echte maximum. Eén land (Laos) heeft zo'n extreme procentuele stijging (vanaf bijna nul in 2000) dat het de hele as zou openrekken als je die niet inzoomt, dat staat ook toegelicht in de tekst onder de grafiek.
+* Gebruik de landenfilter in de zijbalk om een eigen voorbeeld te laten zien (bijvoorbeeld Nederland versus China).
+
+**2. Tabblad "CO2 vs. welvaart" (2 min)**
+* Verschuif de jaar-slider een paar keer, laat zien hoe de trendlijn meebeweegt en hoe de titel automatisch verandert op basis van de berekende correlatie.
+* Noem het concrete getal: correlatie 0,77 in 2022, rijkere landen stoten gemiddeld 6x meer uit dan armere landen.
+* Zet de checkbox (logaritmische schaal) aan en uit om te laten zien wat dat oplevert.
+
+**3. Tabblad "Kaart en tijdlijn" (3 min)**
+* Wereldkaart: verschuif het jaar, laat zien hoe het patroon verandert.
+* Vergelijkingsgrafiek: kies een hoofdland (bijvoorbeeld Nederland) en twee tot drie vergelijkingslanden. Wijs aan hoe het hoofdland opvalt (kleur, dikte) terwijl de rest op de achtergrond blijft (grijs, dun, transparant) zonder te verdwijnen.
+* Wissel de radio-knop tussen CO2 en hernieuwbare energie.
+* Jaar-op-jaar grafiek: laat zien in welk jaar de grootste stijging of daling plaatsvond voor het gekozen land, en probeer een verklaring te geven (bijvoorbeeld een economische crisis, een nieuwe energiecentrale).
+
+**4. Tabblad "Data en methode" (1 min)**
+Kort: twee Kaggle-datasets, samengevoegd op landcode en jaar, Antarctica eruit, transparant over welke landen data missen. Dit laat zien dat er kritisch naar de data is gekeken, niet alleen naar de mooie plaatjes.
+
+**5. Afsluiting (1 min)**
+Terug naar de onderzoeksvraag: het antwoord is genuanceerd. Een kwart van de landen combineert meer hernieuwbare energie met minder uitstoot, maar welvaart en uitstoot hangen nog altijd sterk samen. Er is geen bewijs dat rijkere landen automatisch "schoner" worden.
+
+**Algemene tips**
+* Oefen de overgangen tussen tabbladen hardop, zodat het niet aanvoelt als "en dan klik ik hier".
+* Verdeel van tevoren wie welk tabblad presenteert, en wie de vragen aan het eind opvangt.
+* Check vooraf of de livedemo online werkt (zie sectie 2, "Publiceren op Streamlit Community Cloud") zodat je niet moet improviseren als de gepubliceerde link het niet doet.

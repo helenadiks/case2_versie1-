@@ -1,4 +1,3 @@
-
 import glob
 import os
 
@@ -8,20 +7,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 import kagglehub
 
-# ============================================================
-# PAGINA-INSTELLINGEN
-# ============================================================
 st.set_page_config(
     page_title="Transitie en uitstoot: houdt het gelijke tred?",
     layout="wide"
 )
 
-# ============================================================
-# WEERGAVE-LABELS
-# Alle titels, assen, legenda's en tabelkoppen halen hun tekst
-# hieruit, zodat er nergens een technische kolomnaam (met
-# underscore) of een em-dash in beeld komt.
-# ============================================================
+# Nette namen voor kolommen, zodat we nergens een technische naam met
+# underscore in een titel, as of tabel laten staan.
 LABELS = {
     "country": "Land",
     "iso_code": "Landcode",
@@ -40,51 +32,32 @@ LABELS = {
     "rol": "Rol",
 }
 
-# Kleuren van de gevalideerde, kleurenblind-veilige paletset.
-# Ongewijzigd gelaten t.o.v. de vorige versie.
+# Kleuren uit het gevalideerde, kleurenblind-veilige palet.
 COLOR_SEQUENCE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#4a3aa7"]
 KLEUR_CONTEXT = "#9AA3AA"   # grijs, voor vergelijkingslanden op de achtergrond
 KLEUR_HOOFDROL = "#2a78d6"  # blauw, voor het hoofdland
 
 
-# ============================================================
-# KAGGLE-AUTHENTICATIE (lokaal EN op Streamlit Cloud)
-# ============================================================
 def zet_kaggle_credentials_klaar():
-    """
-    kagglehub heeft een Kaggle API-sleutel nodig. Lokaal staat die meestal
-    al in ~/.kaggle/kaggle.json. Op Streamlit Community Cloud bestaat dat
-    bestand niet, maar kun je de sleutel als "secret" instellen
-    (Settings > Secrets in het Streamlit Cloud dashboard):
-
-        KAGGLE_USERNAME = "jouw_gebruikersnaam"
-        KAGGLE_KEY = "jouw_api_key"
-
-    Deze functie zet die secrets, als ze aanwezig zijn, om naar de
-    omgevingsvariabelen die kagglehub verwacht. Draait de app lokaal met
-    een kaggle.json op de standaardplek, dan gebeurt hier niets en werkt
-    alles zoals voorheen.
-    """
+    # Lokaal gebruiken we gewoon ons eigen kaggle.json. Op Streamlit Cloud
+    # bestaat dat bestand niet, dus zetten we onze Kaggle-secrets (als we
+    # die hebben ingesteld bij Settings > Secrets) om naar de env vars
+    # die kagglehub nodig heeft. Staan er geen secrets, dan gebeurt hier
+    # niets en pakt kagglehub gewoon het lokale bestand.
     try:
         if "KAGGLE_USERNAME" in st.secrets and "KAGGLE_KEY" in st.secrets:
             os.environ["KAGGLE_USERNAME"] = st.secrets["KAGGLE_USERNAME"]
             os.environ["KAGGLE_KEY"] = st.secrets["KAGGLE_KEY"]
     except Exception:
-        # Geen secrets.toml aanwezig (bijvoorbeeld bij lokaal draaien
-        # zonder secrets-bestand) -- dat is geen probleem, dan wordt er
-        # teruggevallen op ~/.kaggle/kaggle.json of losse env vars.
         pass
 
 
 zet_kaggle_credentials_klaar()
 
 
-# ============================================================
-# DATA INLADEN VIA KAGGLEHUB, OPSCHONEN EN TRANSFORMEREN
-# ============================================================
 @st.cache_data
 def load_data():
-    # --- Datasets ophalen via de Kaggle API (kagglehub) ---
+    # Datasets ophalen via de Kaggle API
     co2_path = kagglehub.dataset_download("vishnupriyan123/annual-co2-emissions-per-country")
     ren_path = kagglehub.dataset_download("elvisbui/renewable-energy-share-by-country-2000-2025")
 
@@ -94,7 +67,7 @@ def load_data():
     df_co2 = pd.read_csv(co2_csv)
     df_ren = pd.read_csv(ren_csv)
 
-    # --- Kolomnamen meteen na het inladen aanpassen ---
+    # Kolomnamen meteen aanpassen
     df_co2.rename(columns={
         "Entity": "country",
         "Code": "iso_code",
@@ -105,22 +78,22 @@ def load_data():
     raw_co2_count = len(df_co2)
     raw_ren_count = len(df_ren)
 
-    # --- Filteren op geldige ISO3-landcodes ---
+    # Alleen geldige 3-letterige landcodes houden
     df_co2_clean = df_co2[df_co2["iso_code"].notna() & (df_co2["iso_code"].str.len() == 3)].copy()
     df_ren_clean = df_ren[df_ren["iso_code"].notna() & (df_ren["iso_code"].str.len() == 3)].copy()
 
-    # --- Antarctica expliciet verwijderen ---
+    # Antarctica eruit
     df_co2_clean = df_co2_clean[df_co2_clean["iso_code"] != "ATA"]
     df_ren_clean = df_ren_clean[df_ren_clean["iso_code"] != "ATA"]
 
-    # Beide bestanden hebben een kolom "country" (niet de join-sleutel).
+    # Beide bestanden hebben een kolom "country", die halen we uit renew weg
+    # zodat we straks niet met country_x/country_y zitten na de merge.
     df_ren_clean = df_ren_clean.drop(columns=["country"])
 
-    # --- Inner join op landcode + jaar ---
+    # Inner join op landcode + jaar
     merged = pd.merge(df_co2_clean, df_ren_clean, on=["iso_code", "year"], how="inner")
     merged = merged.sort_values(["iso_code", "year"]).reset_index(drop=True)
 
-    # --- Afgeleide kolommen ---
     merged["gdp_per_capita"] = merged.apply(
         lambda r: r["gdp"] / r["population"] if pd.notna(r["population"]) and r["population"] > 0 else None, axis=1
     )
@@ -128,12 +101,10 @@ def load_data():
         lambda r: r["co2_emissions"] / r["population"] if pd.notna(r["population"]) and r["population"] > 0 else None, axis=1
     )
 
-    # --- Jaar-op-jaar verandering (diff), per land ---
-    # groupby is hier nodig: zonder groepering zou de eerste rij van het
-    # ene land worden afgetrokken van de laatste rij van het vorige land.
+    # Jaar-op-jaar verandering per land. We groeperen op land, anders trekken
+    # we de eerste rij van het ene land af van de laatste rij van het vorige.
     merged["co2_verandering"] = merged.groupby("iso_code")["co2_per_capita"].diff()
 
-    # --- Inkomenscategorieën ---
     bins = [-float("inf"), 5000, 20000, float("inf")]
     labels_inkomen = ["Lage inkomens (< $5k)", "Opkomende inkomens ($5k-$20k)", "Hoge inkomens (> $20k)"]
     merged["income_group"] = pd.cut(merged["gdp_per_capita"], bins=bins, labels=labels_inkomen)
@@ -152,7 +123,6 @@ def load_data():
     return merged, stats
 
 
-# Data laden
 try:
     df, stats = load_data()
 except Exception as e:
@@ -163,13 +133,9 @@ except Exception as e:
     )
     st.stop()
 
-# Datumbereik bepalen
 min_jaar = int(df["year"].min())
 max_jaar = int(df["year"].max())
 
-# ============================================================
-# HOOFDTITEL
-# ============================================================
 st.title("Transitie en uitstoot: houdt het gelijke tred?")
 st.markdown(
     "**Onderzoeksvraag:** *in hoeverre komt de transitie naar hernieuwbare energie "
@@ -182,9 +148,6 @@ st.caption(
     "verantwoording van de gebruikte data."
 )
 
-# ============================================================
-# ZIJBALK / FILTERS
-# ============================================================
 st.sidebar.header("Filters")
 selected_year = st.sidebar.slider("Selecteer een jaar", min_value=min_jaar, max_value=max_jaar, value=max_jaar)
 
@@ -201,7 +164,6 @@ selected_income = st.sidebar.selectbox("Filter op inkomensniveau", income_option
 
 use_log_scale = st.sidebar.checkbox("Logaritmische schaal voor GDP", value=True)
 
-# Dataselectie filteren op basis van zijbalk
 df_year = df[df["year"] == selected_year].copy()
 
 if selected_countries:
@@ -210,9 +172,6 @@ if selected_countries:
 if selected_income != "Alle inkomensgroepen":
     df_year = df_year[df_year["income_group"] == selected_income]
 
-# ============================================================
-# KERNCIJFERS (KPI's)
-# ============================================================
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Aantal geanalyseerde landen", len(df_year))
 col2.metric(
@@ -230,9 +189,6 @@ col4.metric(
 
 st.divider()
 
-# ============================================================
-# TABS
-# ============================================================
 tab1, tab2, tab3, tab4 = st.tabs([
     "Walk vs. talk",
     "CO2 vs. welvaart",
@@ -240,9 +196,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Data en methode",
 ])
 
-# -----------------------------------------------------------
-# TAB 1 - Walk vs. talk
-# -----------------------------------------------------------
 with tab1:
     df_start = df[df["year"] == min_jaar][["iso_code", "co2_per_capita", "renewables_share_elec"]]
     df_recent = df[df["year"] == max_jaar][["iso_code", "country", "co2_per_capita", "renewables_share_elec", "income_group"]]
@@ -278,7 +231,6 @@ with tab1:
 
         df_change["Categorie"] = df_change.apply(categoriseer, axis=1)
 
-        # Bewering ipv label: het percentage landen dat echt "walk the talk" doet.
         n_walk = (df_change["Categorie"].str.startswith("Walk")).sum()
         n_totaal = len(df_change)
         pct_walk = round(100 * n_walk / n_totaal) if n_totaal else 0
@@ -290,18 +242,18 @@ with tab1:
             "of boekt vooruitgang zonder dat renewables daarin de hoofdrol speelt."
         )
 
-        # Annotaties eerst bepalen (voor het maken van de grafiek), zodat de
-        # as-schaal hierop afgestemd kan worden in plaats van andersom.
+        # We bepalen de twee voorbeelden voor de annotaties eerst, zodat we
+        # de as-schaal daarop kunnen afstemmen in plaats van andersom.
         walk_df = df_change[df_change["Categorie"].str.startswith("Walk")]
         talk_df = df_change[df_change["Categorie"].str.startswith("Talk")]
         beste_walk = walk_df.nsmallest(1, "co2_pct_change").iloc[0] if len(walk_df) > 0 else None
         ergste_talk = talk_df.nlargest(1, "co2_pct_change").iloc[0] if len(talk_df) > 0 else None
 
-        # De as-schaal wordt begrensd op basis van de twee aangewezen voorbeelden
-        # (plus 15% marge), in plaats van op het absolute maximum van de data.
-        # Een enkel land met een verwaarloosbare CO2-uitstoot in het startjaar kan
-        # anders een procentuele uitschieter geven die de hele as openrekt, waardoor
-        # de overige landen niet meer van elkaar te onderscheiden zijn.
+        # We begrenzen de as op basis van deze twee voorbeelden (plus 15%
+        # marge) in plaats van op het maximum van de data. Eén land met een
+        # bijna-nul CO2-uitstoot in het startjaar geeft anders zo'n grote
+        # procentuele uitschieter dat de rest van de landen niet meer van
+        # elkaar te onderscheiden is.
         y_boven_kandidaten = [v for v in [ergste_talk["co2_pct_change"] if ergste_talk is not None else None, 100] if v is not None]
         y_onder_kandidaten = [v for v in [beste_walk["co2_pct_change"] if beste_walk is not None else None, -20] if v is not None]
         y_boven = max(y_boven_kandidaten) * 1.15
@@ -353,9 +305,6 @@ with tab1:
         "doordat de totale energievraag harder groeide dan de omschakeling."
     )
 
-# -----------------------------------------------------------
-# TAB 2 - CO2 vs. welvaart
-# -----------------------------------------------------------
 with tab2:
     df_ekc_clean = df_year.dropna(subset=["gdp_per_capita", "co2_per_capita", "population"])
 
@@ -363,7 +312,7 @@ with tab2:
         st.subheader(f"Stijgt CO2-uitstoot mee met welvaart? ({selected_year})")
         st.warning("Er zijn geen volledige gegevens (GDP en CO2 per inwoner) beschikbaar voor de huidige selectie.")
     else:
-        # Correlatie berekenen zodat de titel een bewering wordt, geen label.
+        # We berekenen de correlatie zodat de titel een bewering wordt, geen label.
         correlatie = df_ekc_clean["gdp_per_capita"].corr(df_ekc_clean["co2_per_capita"])
         if correlatie >= 0.5:
             bewering = f"Rijkere landen stoten in {selected_year} nog altijd flink meer CO2 uit per inwoner"
@@ -405,9 +354,6 @@ with tab2:
         "over alle landen heen (een eenvoudige lineaire regressie)."
     )
 
-# -----------------------------------------------------------
-# TAB 3 - Kaart en tijdlijn
-# -----------------------------------------------------------
 with tab3:
     st.subheader(f"Aandeel hernieuwbare energie per land ({selected_year})")
     st.caption("Aanvullend bij de vorige twee grafieken: geografische spreiding en verloop per land.")
@@ -457,8 +403,8 @@ with tab3:
 
     fig_vergelijk = go.Figure()
 
-    # Context eerst tekenen (grijs, dun, transparant), zodat de hoofdlijn
-    # er straks bovenop komt te liggen in plaats van andersom.
+    # We tekenen de context eerst (grijs, dun, transparant), zodat de
+    # hoofdlijn er straks bovenop komt te liggen in plaats van andersom.
     for land in vergelijkingslanden:
         df_context = df[df["country"] == land].sort_values("year")
         fig_vergelijk.add_trace(go.Scatter(
@@ -468,7 +414,7 @@ with tab3:
             opacity=0.55,
         ))
 
-    # Hoofdland als laatste tekenen: kleur, dik, vol.
+    # Het hoofdland tekenen we als laatste: kleur, dik, vol.
     df_hoofd = df[df["country"] == gekozen_land].sort_values("year")
     fig_vergelijk.add_trace(go.Scatter(
         x=df_hoofd["year"], y=df_hoofd[metric_keuze],
@@ -513,7 +459,7 @@ with tab3:
         fig_diff.update_layout(showlegend=False)
         fig_diff.add_hline(y=0, line_color="gray")
 
-        # De grootste stijging en de grootste daling annoteren.
+        # We annoteren de grootste stijging en de grootste daling.
         grootste_stijging = df_hoofd_diff.loc[df_hoofd_diff["co2_verandering"].idxmax()]
         grootste_daling = df_hoofd_diff.loc[df_hoofd_diff["co2_verandering"].idxmin()]
         fig_diff.add_annotation(
@@ -526,9 +472,6 @@ with tab3:
         )
         st.plotly_chart(fig_diff, use_container_width=True)
 
-# -----------------------------------------------------------
-# TAB 4 - Data en methode
-# -----------------------------------------------------------
 with tab4:
     st.subheader("Hoe de data is opgebouwd")
     st.write(

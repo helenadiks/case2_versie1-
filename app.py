@@ -290,6 +290,24 @@ with tab1:
             "of boekt vooruitgang zonder dat renewables daarin de hoofdrol speelt."
         )
 
+        # Annotaties eerst bepalen (voor het maken van de grafiek), zodat de
+        # as-schaal hierop afgestemd kan worden in plaats van andersom.
+        walk_df = df_change[df_change["Categorie"].str.startswith("Walk")]
+        talk_df = df_change[df_change["Categorie"].str.startswith("Talk")]
+        beste_walk = walk_df.nsmallest(1, "co2_pct_change").iloc[0] if len(walk_df) > 0 else None
+        ergste_talk = talk_df.nlargest(1, "co2_pct_change").iloc[0] if len(talk_df) > 0 else None
+
+        # De as-schaal wordt begrensd op basis van de twee aangewezen voorbeelden
+        # (plus 15% marge), in plaats van op het absolute maximum van de data.
+        # Een enkel land met een verwaarloosbare CO2-uitstoot in het startjaar kan
+        # anders een procentuele uitschieter geven die de hele as openrekt, waardoor
+        # de overige landen niet meer van elkaar te onderscheiden zijn.
+        y_boven_kandidaten = [v for v in [ergste_talk["co2_pct_change"] if ergste_talk is not None else None, 100] if v is not None]
+        y_onder_kandidaten = [v for v in [beste_walk["co2_pct_change"] if beste_walk is not None else None, -20] if v is not None]
+        y_boven = max(y_boven_kandidaten) * 1.15
+        y_onder = min(y_onder_kandidaten) * 1.15 if min(y_onder_kandidaten) < 0 else min(y_onder_kandidaten) * 0.85
+        n_buiten_beeld = int(((df_change["co2_pct_change"] > y_boven) | (df_change["co2_pct_change"] < y_onder)).sum())
+
         fig_walk = px.scatter(
             df_change,
             x="ren_diff",
@@ -302,21 +320,15 @@ with tab1:
         )
         fig_walk.add_hline(y=0, line_dash="dash", line_color="gray")
         fig_walk.add_vline(x=5, line_dash="dash", line_color="gray")
+        fig_walk.update_yaxes(range=[y_onder, y_boven])
 
-        # Annotaties: de duidelijkste "walk"- en "talk"-voorbeelden een naam geven,
-        # in plaats van dat de kijker zelf tussen alle punten moet zoeken.
-        walk_df = df_change[df_change["Categorie"].str.startswith("Walk")]
-        talk_df = df_change[df_change["Categorie"].str.startswith("Talk")]
-
-        if len(walk_df) > 0:
-            beste_walk = walk_df.nsmallest(1, "co2_pct_change").iloc[0]
+        if beste_walk is not None:
             fig_walk.add_annotation(
                 x=beste_walk["ren_diff"], y=beste_walk["co2_pct_change"],
                 text=f"{beste_walk['country']}: sterkste ontkoppeling",
                 showarrow=True, arrowhead=2, ax=40, ay=-30,
             )
-        if len(talk_df) > 0:
-            ergste_talk = talk_df.nlargest(1, "co2_pct_change").iloc[0]
+        if ergste_talk is not None:
             fig_walk.add_annotation(
                 x=ergste_talk["ren_diff"], y=ergste_talk["co2_pct_change"],
                 text=f"{ergste_talk['country']}: meer hernieuwbaar, CO2 stijgt toch fors",
@@ -324,6 +336,15 @@ with tab1:
             )
 
         st.plotly_chart(fig_walk, use_container_width=True)
+
+        if n_buiten_beeld > 0:
+            st.caption(
+                f"De y-as is ingezoomd tot net voorbij de aangewezen voorbeelden, zodat de meeste landen "
+                f"onderscheidbaar blijven. {n_buiten_beeld} land(en) met een extreme procentuele verandering "
+                "vallen daardoor buiten beeld; dat komt doordat hun CO2-uitstoot per inwoner in "
+                f"{min_jaar} bijna nul was, waardoor elke stijging procentueel enorm uitpakt. Filter op dat "
+                "land via de zijbalk om het exacte cijfer te zien."
+            )
 
     st.markdown(
         "**Hoe lees je dit:** landen rechtsonder (meer hernieuwbare stroom, minder CO2) "
